@@ -1,14 +1,15 @@
 # Home Credit Default Risk
 
-Predicting which loan applicants will have repayment difficulty, using the
+This project predicts which loan applicants are likely to have repayment difficulty using the
 [Home Credit Default Risk](https://www.kaggle.com/competitions/home-credit-default-risk)
-dataset: 307,511 training applicants, 48,744 test applicants, and seven linked tables of
-credit-bureau, previous-application, installment, POS and credit-card history.
+dataset. It includes 307,511 training applicants, 48,744 test applicants, and seven linked
+tables covering credit bureau history, previous applications, installments, POS cash, and
+credit card balance.
 
-My goal here was not to chase the leaderboard with a large stack of automated features. I
-wanted every feature in the final model to trace back to something I had actually measured
-in the EDA, and I wanted the evaluation to be honest: all preprocessing fitted inside
-cross-validation folds, no target leakage, no feature kept without evidence.
+My goal was not to chase the leaderboard with a large stack of automated features. I wanted
+every feature in the final model to trace back to something I had actually measured in the
+EDA, and I wanted the evaluation to be honest: all preprocessing fitted inside
+cross-validation folds, no target leakage, and no feature kept without evidence.
 
 ![Home Credit](data/home_credit.png)
 
@@ -24,8 +25,22 @@ cross-validation folds, no target leakage, no feature kept without evidence.
 | CatBoost, native categoricals | 201 | 0.7855 | 0.0036 |
 | **Blend — 0.45 LightGBM / 0.55 CatBoost** | 201 | **0.7872** (OOF) | — |
 
-The blend only buys about 0.0017 AUC over CatBoost alone. Worth taking, but it is not
-where the gains came from.
+The blend only buys about 0.0017 AUC over CatBoost alone. Worth taking, but it is not where
+the gains came from.
+
+## Kaggle submission
+
+I submitted the OOF-weighted LightGBM/CatBoost blend as a late submission:
+
+| | |
+|---|---|
+| Private leaderboard | **0.78757** |
+| Public leaderboard | 0.79324 |
+| Cross-validated OOF | 0.7872 |
+
+The private score lands within 0.0003 of my cross-validated OOF estimate, which is the result
+I care about most here: the validation setup was honest enough that it predicted unseen
+performance almost exactly.
 
 ## Where the gains actually came from
 
@@ -61,14 +76,15 @@ The three notebooks run in order and are committed with their outputs, so you ca
 whole analysis on GitHub without downloading the data.
 
 **`notebooks/01_eda.ipynb`.** I work through the application table and then each relational
-table with the same loop: question, action, finding, implication. Findings that drove later
-decisions: an 8.07% default rate, 49 application columns at least 40% missing, 55,374
-`DAYS_EMPLOYED` sentinel values (365243) that align exactly with `ORGANIZATION_TYPE == "XNA"`
-and are *less* likely to default, 14 redundant AVG/MODE/MEDI housing triplets with pairwise
-correlations above 0.963, and clear risk separation for late installments (+2.69pp), POS
-delinquency (+2.41pp) and ever exceeding a card limit (+4.20pp). I also audited every
-`DAYS_*` / `MONTHS_BALANCE` field to confirm nothing observed after the application date
-leaks into the features.
+table with the same loop: question, action, finding, implication. The application audit
+establishes an 8.07% default rate (24,825 of 307,511), 49 columns at least 40% missing, and
+55,374 `DAYS_EMPLOYED` sentinel values (365243) that align exactly with
+`ORGANIZATION_TYPE == "XNA"` and are *less* likely to default (5.40% vs 8.66%), so the
+sentinel becomes a flag rather than a value to impute. Each history table then gets its own
+section asking what one row means, how deep the history goes, and whether a count or share
+carries more signal than a simple "ever happened" flag. I also audit every `DAYS_*` and
+`MONTHS_BALANCE` field to confirm nothing observed after the application date can leak into
+the features.
 
 **`notebooks/02_features.ipynb`.** Builds one applicant-level table: 121 original
 application columns plus 81 engineered features (203 columns including `SK_ID_CURR` and
@@ -82,24 +98,6 @@ deterministic.
 feature-group and ablation experiments, gain and permutation importance, tuning
 (complexity, then sampling), CatBoost, and an OOF-weighted blend. Preprocessing is fitted
 inside each fold and early stopping uses only the validation fold.
-
-## Reusable pipeline
-
-`src/features/` is the feature build extracted into a tested Python package:
-
-```bash
-python -m src.features.build_features \
-  --data-dir data \
-  --output-dir data/processed \
-  --verify-determinism
-
-python -m unittest discover -s tests -v
-```
-
-One caveat worth stating plainly: this package covers my **first-pass** feature set (50
-engineered features), not the 81-feature set the final model uses. The full set currently
-lives in `02_features.ipynb`. Porting the remaining features across is the next thing on my
-list.
 
 ## Running it yourself
 
@@ -115,8 +113,23 @@ unzip data/home-credit-default-risk.zip -d data
 jupyter lab
 ```
 
-The raw CSVs and the generated Parquet tables are gitignored. They are too large for the
-repo and are reproducible from the command above.
+Run the notebooks in order. `02_features.ipynb` writes the Parquet tables that
+`03_modeling.ipynb` reads from `data/processed/`.
+
+The raw CSVs, the generated Parquet tables and the submission files are gitignored. They are
+too large for the repo and are reproducible from the notebooks.
+
+## Layout
 
 ```
+notebooks/   01_eda → 02_features → 03_modeling, committed with outputs
+data/        raw CSVs (gitignored); generated Parquet in data/processed/
+```
 
+## What I would do next
+
+- Extract the feature build out of the notebook into a tested Python module so it can be run
+  as a script rather than re-executed cell by cell.
+- Replace the hand-run tuning trials with a proper search (Optuna) over a wider space.
+- Revisit the two feature families that did not pay for themselves rather than keeping them
+  on the assumption that more features is better.

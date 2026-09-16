@@ -125,11 +125,3 @@ too large for the repo and are reproducible from the notebooks.
 notebooks/   01_eda → 02_features → 03_modeling, committed with outputs
 data/        raw CSVs (gitignored); generated Parquet in data/processed/
 ```
-
-## What I would do next
-
-- Extract the feature build out of the notebook into a tested Python module so it can be run
-  as a script rather than re-executed cell by cell.
-- Replace the hand-run tuning trials with a proper search (Optuna) over a wider space.
-- Revisit the two feature families that did not pay for themselves rather than keeping them
-  on the assumption that more features is better.

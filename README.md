@@ -118,19 +118,5 @@ jupyter lab
 The raw CSVs and the generated Parquet tables are gitignored. They are too large for the
 repo and are reproducible from the command above.
 
-## Layout
-
-```
-notebooks/   01_eda → 02_features → 03_modeling, committed with outputs
-src/features/  chunked, deterministic feature build (installed as a package)
-tests/       unit tests for the feature helpers
-data/        raw CSVs (gitignored) and generated Parquet in data/processed/
 ```
 
-## What I would do next
-
-- Port the remaining engineered features into `src/features/` so the notebook and the package
-  agree, and expand test coverage to match.
-- Replace the hand-run tuning trials with a proper search (Optuna) over a wider space.
-- Revisit the two feature families that did not pay for themselves rather than keeping them
-  on the assumption that more features is better.

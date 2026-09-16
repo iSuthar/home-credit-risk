@@ -1,2 +1,47 @@
+# Data
+# The Home Credit competition data is ~2.5 GB; download it from Kaggle instead.
 data/*.csv
-notebooks/application_train_profile.html
+data/*.zip
+data/*.kaggle-partial
+data/processed/
+
+# Model outputs
+submissions/
+*.parquet
+*.pkl
+*.joblib
+*.model
+
+# Kaggle credentials
+kaggle.json
+.kaggle/
+
+# Notebooks
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+notebooks/*.html
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments
+.venv/
+venv/
+env/
+.python-version
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
